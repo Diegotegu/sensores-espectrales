@@ -23,8 +23,8 @@ void setup() {
     // don't do anything more:
     while (1);
   }
-  if(debugger){
-  Serial.println("card initialized.");
+  if (debugger) {
+    Serial.println("card initialized.");
   }
   dataFile = SD.open("datalog.txt", FILE_WRITE);
 
@@ -37,70 +37,69 @@ void setup() {
   pinPeripheral(1, PIO_SERCOM); //Assign TX function to pin 1
   pinMode(6, OUTPUT);
   digitalWrite(6, LOW);
+  pinMode(7, INPUT_PULLUP);
 }
 
 // the loop routine runs over and over again forever:
 void loop() {
-
   String resp = "";
   String respuesta = "";
   String resp_1 = "";
   String respuesta_1 = "";
   String resp_completa = "";
   char c;
-  int index;
-if(debugger){
-  Serial.println("enviando peticion a sensor de incidencia");
+  int index, Button;
+  Button = digitalRead(7);
+  if (!Button) {
+    digitalWrite(6, HIGH);
+    delay(500);
+    if (debugger) {
+      Serial.println("enviando peticion a sensor de incidencia");
+    }
+    mySerial.println("ATCDATA");
+    while (!mySerial.available());
+    while (mySerial.available()) {
+      c = mySerial.read();
+      resp += c;
+      delay(100);
+    }
+    c = 0;
+    if (debugger) {
+      Serial.println("enviando peticion a sensor de reflectancia");
+    }
+    Serial1.println("ATCDATA");
+    while (!Serial1.available());
+    while (Serial1.available()) {
+      c = Serial1.read();
+      resp_1 += c;
+      delay(100);
+    }
+    if (debugger) {
+      Serial.println("procesando informacion");
+    }
+
+    index = resp.indexOf("O");
+    respuesta = resp.substring(1, index);
+
+
+    index = resp_1.indexOf("O");
+    respuesta_1 = resp_1.substring(0, index);
+    if (debugger) {
+      Serial.println("guardando en la SD");
+    }
+
+    dataFile = SD.open("datalog.txt", FILE_WRITE);
+    resp_completa = respuesta + "," + respuesta_1;
+
+
+    if (dataFile) {
+      dataFile.println(resp_completa);
+      dataFile.close();
+    }
+    digitalWrite(6, LOW);
+    delay(500);
+
   }
-  mySerial.println("ATCDATA");
-  while (!mySerial.available());
-  while (mySerial.available()) {
-    c = mySerial.read();
-    resp += c;
-    delay(100);
-  }
-  c = 0;
-  if(debugger){
-  Serial.println("enviando peticion a sensor de reflectancia");
-  }
-  Serial1.println("ATCDATA");
-  while (!Serial1.available());
-  while (Serial1.available()) {
-    c = Serial1.read();
-    resp_1 += c;
-    delay(100);
-  }
-if(debugger){
-  Serial.println("procesando informacion");
-}
-
-  index = resp.indexOf("O");
-  respuesta = resp.substring(1, index);
-
-
-  index = resp_1.indexOf("O");
-  respuesta_1 = resp_1.substring(0, index);
-if(debugger){
-  Serial.println("guardando en la SD");
-}
-
-  dataFile = SD.open("datalog.txt", FILE_WRITE);
-  resp_completa = respuesta + "," + respuesta_1;
-
-
-  if (dataFile) {
-    dataFile.println(resp_completa);
-    dataFile.close();
-  }
-  digitalWrite(6, HIGH);
-  delay(500);
-  digitalWrite(6, LOW);
-  delay(500);
-  digitalWrite(6, HIGH);
-  delay(500);
-  digitalWrite(6, LOW);
-
-  delay(10000);
 }
 
 // Attach the interrupt handler to the SERCOM
